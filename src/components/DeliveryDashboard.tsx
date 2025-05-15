@@ -12,16 +12,27 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, TrendingUp, WeightIcon, DollarSign, FilterX, ListOrdered, Search } from "lucide-react";
+import { CalendarIcon, TrendingUp, WeightIcon, DollarSign, FilterX, ListOrdered, Search, Trash2 } from "lucide-react";
 import { SummaryCard } from './SummaryCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const ITEMS_PER_PAGE = 10;
 
 export function DeliveryDashboard() {
-  const [allDeliveries] = useLocalStorage<Delivery[]>("logiTrackDeliveries", []);
+  const [allDeliveries, setAllDeliveries] = useLocalStorage<Delivery[]>("logiTrackDeliveries", []);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -33,6 +44,10 @@ export function DeliveryDashboard() {
   const [formattedTotalWeight, setFormattedTotalWeight] = useState<string>("Loading...");
   const [formattedAvgPricePerKg, setFormattedAvgPricePerKg] = useState<string>("Loading...");
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deliveryToDelete, setDeliveryToDelete] = useState<string | null>(null);
+  const { toast } = useToast();
+
   const handleSort = (column: keyof Delivery) => {
     if (sortColumn === column) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -43,13 +58,13 @@ export function DeliveryDashboard() {
   };
   
   const filteredAndSortedDeliveries = useMemo(() => {
-    let deliveries = [...allDeliveries].reverse(); // Show newest first by default before sorting
+    let deliveries = [...allDeliveries].reverse(); 
 
     if (startDate || endDate) {
         deliveries = deliveries.filter(delivery => {
         try {
             const deliveryDate = parse(delivery.date, 'yyyy-MM-dd', new Date());
-            if (!isValid(deliveryDate)) return false; // Skip invalid dates
+            if (!isValid(deliveryDate)) return false;
 
             const deliveryTimestamp = deliveryDate.setHours(0,0,0,0);
             
@@ -86,7 +101,7 @@ export function DeliveryDashboard() {
         if (typeof valA === 'number' && typeof valB === 'number') {
           comparison = valA - valB;
         } else if (typeof valA === 'string' && typeof valB === 'string') {
-          if (sortColumn === 'date') { // Date string comparison
+          if (sortColumn === 'date') { 
             comparison = new Date(valA).getTime() - new Date(valB).getTime();
           } else {
             comparison = valA.localeCompare(valB);
@@ -113,10 +128,9 @@ export function DeliveryDashboard() {
   );
 
   useEffect(() => {
-    // Client-side formatting to avoid hydration mismatch
-    setFormattedTotalRevenue(`${totalRevenue.toLocaleString()} Ar`);
-    setFormattedTotalWeight(`${totalWeight.toLocaleString()} kg`);
-    setFormattedAvgPricePerKg(`${averagePricePerKg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} Ar`);
+    setFormattedTotalRevenue(totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'MGA', minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace('MGA', 'Ar').trim());
+    setFormattedTotalWeight(`${totalWeight.toLocaleString('de-DE')} kg`);
+    setFormattedAvgPricePerKg(averagePricePerKg.toLocaleString('de-DE', { style: 'currency', currency: 'MGA', minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('MGA', 'Ar').trim());
   }, [totalRevenue, totalWeight, averagePricePerKg]);
 
 
@@ -135,7 +149,7 @@ export function DeliveryDashboard() {
   };
 
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); 
   }, [startDate, endDate, searchTerm]);
 
   const SortableHeader = ({ column, label }: { column: keyof Delivery; label: string }) => (
@@ -147,6 +161,23 @@ export function DeliveryDashboard() {
     </TableHead>
   );
 
+  const openDeleteConfirmation = (id: string) => {
+    setDeliveryToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deliveryToDelete) {
+      setAllDeliveries(prevDeliveries => prevDeliveries.filter(d => d.id !== deliveryToDelete));
+      toast({
+        title: "Delivery Deleted",
+        description: "The delivery record has been successfully deleted.",
+        variant: "default",
+      });
+    }
+    setShowDeleteDialog(false);
+    setDeliveryToDelete(null);
+  };
 
   return (
     <div className="space-y-8">
@@ -235,6 +266,7 @@ export function DeliveryDashboard() {
                   <SortableHeader column="weightKg" label="Weight (kg)" />
                   <SortableHeader column="pricePerKg" label="Price/kg (Ar)" />
                   <SortableHeader column="totalAriary" label="Total (Ar)" />
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -249,11 +281,22 @@ export function DeliveryDashboard() {
                       <TableCell className="text-right">{delivery.weightKg.toLocaleString()}</TableCell>
                       <TableCell className="text-right">{delivery.pricePerKg.toLocaleString()}</TableCell>
                       <TableCell className="text-right font-semibold">{delivery.totalAriary.toLocaleString()}</TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteConfirmation(delivery.id)}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                           <span className="sr-only">Delete</span>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                       No deliveries found matching your criteria.
                     </TableCell>
                   </TableRow>
@@ -286,7 +329,24 @@ export function DeliveryDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              delivery record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeliveryToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-
-    
+}
