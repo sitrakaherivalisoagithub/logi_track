@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -27,6 +28,10 @@ export function DeliveryDashboard() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortColumn, setSortColumn] = useState<keyof Delivery | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const [formattedTotalRevenue, setFormattedTotalRevenue] = useState<string>("Loading...");
+  const [formattedTotalWeight, setFormattedTotalWeight] = useState<string>("Loading...");
+  const [formattedAvgPricePerKg, setFormattedAvgPricePerKg] = useState<string>("Loading...");
 
   const handleSort = (column: keyof Delivery) => {
     if (sortColumn === column) {
@@ -91,7 +96,6 @@ export function DeliveryDashboard() {
       });
     }
 
-
     return deliveries;
   }, [allDeliveries, startDate, endDate, searchTerm, sortColumn, sortDirection]);
 
@@ -107,6 +111,14 @@ export function DeliveryDashboard() {
     totalWeight > 0 ? totalRevenue / totalWeight : 0,
     [totalRevenue, totalWeight]
   );
+
+  useEffect(() => {
+    // Client-side formatting to avoid hydration mismatch
+    setFormattedTotalRevenue(`${totalRevenue.toLocaleString()} Ar`);
+    setFormattedTotalWeight(`${totalWeight.toLocaleString()} kg`);
+    setFormattedAvgPricePerKg(`${averagePricePerKg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} Ar`);
+  }, [totalRevenue, totalWeight, averagePricePerKg]);
+
 
   const totalPages = Math.ceil(filteredAndSortedDeliveries.length / ITEMS_PER_PAGE);
   const paginatedDeliveries = filteredAndSortedDeliveries.slice(
@@ -146,9 +158,9 @@ export function DeliveryDashboard() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <SummaryCard title="Total Revenue" value={`${totalRevenue.toLocaleString()} Ar`} icon={TrendingUp} description="Over selected period" />
-        <SummaryCard title="Total Weight" value={`${totalWeight.toLocaleString()} kg`} icon={WeightIcon} description="Over selected period" />
-        <SummaryCard title="Avg. Price/kg" value={`${averagePricePerKg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} Ar`} icon={DollarSign} description="Over selected period" />
+        <SummaryCard title="Total Revenue" value={formattedTotalRevenue} icon={TrendingUp} description="Over selected period" />
+        <SummaryCard title="Total Weight" value={formattedTotalWeight} icon={WeightIcon} description="Over selected period" />
+        <SummaryCard title="Avg. Price/kg" value={formattedAvgPricePerKg} icon={DollarSign} description="Over selected period" />
       </div>
 
       <Card className="shadow-lg">
@@ -276,4 +288,5 @@ export function DeliveryDashboard() {
       </Card>
     </div>
   );
-}
+
+    
