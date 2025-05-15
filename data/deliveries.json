@@ -1,0 +1,24 @@
+[
+  {
+    "date": "2025-05-01",
+    "client": "Sitraka",
+    "departureLocation": "Ikalamavony",
+    "destination": "Fianarantsoa ",
+    "goods": "Manioc",
+    "weightKg": 8000,
+    "pricePerKg": 170,
+    "totalAriary": 1360000,
+    "id": "2b92c681-f758-4466-8728-5a21eb9a1151"
+  },
+  {
+    "date": "2025-05-08",
+    "client": "Betrena",
+    "departureLocation": "Fianarantsoa",
+    "destination": "Ikalamavony",
+    "goods": "Riz",
+    "weightKg": 10000,
+    "pricePerKg": 150,
+    "totalAriary": 1500000,
+    "id": "fc55b246-b501-4a4a-972c-2bf43d1bad82"
+  }
+]
