@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,10 +26,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Sparkles, Loader2, Info } from "lucide-react";
-import { Delivery, AISuggestion } from "@/types/delivery";
+import type { Delivery, AISuggestion } from "@/types/delivery";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
-import { suggestPricePerKg, SuggestPricePerKgInput } from "@/ai/flows/suggest-price-per-kg";
+import { suggestPricePerKg, type SuggestPricePerKgInput } from "@/ai/flows/suggest-price-per-kg";
 import { useState, useEffect } from "react";
 
 const formSchema = z.object({
@@ -59,26 +60,36 @@ export function DeliveryForm() {
       departureLocation: "",
       destination: "",
       goods: "",
-      weightKg: undefined,
-      pricePerKg: undefined,
-      totalAriary: undefined,
+      weightKg: '' as unknown as number, // Initialize as empty string for controlled input
+      pricePerKg: '' as unknown as number, // Initialize as empty string
+      totalAriary: '' as unknown as number, // Initialize as empty string
     },
   });
 
-  const weightKg = form.watch('weightKg');
-  const pricePerKg = form.watch('pricePerKg');
+  const watchedWeightKg = form.watch('weightKg');
+  const watchedPricePerKg = form.watch('pricePerKg');
 
   useEffect(() => {
-    if (typeof weightKg === 'number' && weightKg > 0 && typeof pricePerKg === 'number' && pricePerKg > 0) {
-      const calculatedTotal = parseFloat((weightKg * pricePerKg).toFixed(2));
-      form.setValue('totalAriary', calculatedTotal, { shouldValidate: true });
+    const weightNum = parseFloat(String(watchedWeightKg));
+    const priceNum = parseFloat(String(watchedPricePerKg));
+
+    if (!isNaN(weightNum) && weightNum > 0 && !isNaN(priceNum) && priceNum > 0) {
+      const calculatedTotal = parseFloat((weightNum * priceNum).toFixed(2));
+      form.setValue('totalAriary', String(calculatedTotal) as unknown as number, { shouldValidate: true });
+    } else {
+      // Optionally clear totalAriary if weight/price are not valid for calculation
+      // and totalAriary is not already empty.
+      // This check prevents an infinite loop if totalAriary also watched.
+      if (form.getValues('totalAriary') !== ('' as unknown as number)) {
+        // form.setValue('totalAriary', '' as unknown as number, { shouldValidate: true });
+      }
     }
-  }, [weightKg, pricePerKg, form]);
+  }, [watchedWeightKg, watchedPricePerKg, form]);
 
   async function onSubmit(values: DeliveryFormValues) {
     const newDelivery: Delivery = {
       id: crypto.randomUUID(),
-      ...values,
+      ...values, // Values will be coerced to numbers by Zod
     };
     setDeliveries([...deliveries, newDelivery]);
     toast({
@@ -86,21 +97,24 @@ export function DeliveryForm() {
       description: "Delivery logged successfully.",
       variant: "default",
     });
-    form.reset();
+    form.reset(); // Resets to new defaultValues (empty strings for numbers)
     setAiSuggestion(null);
     setAiError(null);
   }
 
   const handleSuggestPrice = async () => {
-    const goods = form.getValues("goods");
-    const weight = form.getValues("weightKg");
-    const departure = form.getValues("departureLocation");
-    const destination = form.getValues("destination");
+    // Get raw string values from form for AI suggestion
+    const goods = String(form.getValues("goods") || "");
+    const weightString = String(form.getValues("weightKg") || "");
+    const departure = String(form.getValues("departureLocation") || "");
+    const destination = String(form.getValues("destination") || "");
+    
+    const weight = parseFloat(weightString);
 
-    if (!goods || !weight || !departure || !destination) {
+    if (!goods || isNaN(weight) || weight <=0 || !departure || !destination) {
       toast({
         title: "Missing Information",
-        description: "Please fill in Goods, Weight, Departure, and Destination to get a price suggestion.",
+        description: "Please fill in Goods, valid Weight, Departure, and Destination to get a price suggestion.",
         variant: "destructive",
       });
       return;
@@ -119,7 +133,7 @@ export function DeliveryForm() {
       const result = await suggestPricePerKg(input);
       setAiSuggestion(result);
       if (result.suggestedPricePerKg) {
-        form.setValue('pricePerKg', result.suggestedPricePerKg, { shouldValidate: true });
+        form.setValue('pricePerKg', String(result.suggestedPricePerKg) as unknown as number, { shouldValidate: true });
       }
     } catch (error) {
       console.error("AI suggestion error:", error);
@@ -134,8 +148,16 @@ export function DeliveryForm() {
     }
   };
   
-  const relevantFieldsForAI = form.watch(['goods', 'weightKg', 'departureLocation', 'destination']);
-  const canSuggestPrice = relevantFieldsForAI.every(field => field && (typeof field === 'string' ? field.trim() !== '' : typeof field === 'number' ? field > 0 : false));
+  const rawGoods = form.watch('goods');
+  const rawWeightKg = form.watch('weightKg');
+  const rawDepartureLocation = form.watch('departureLocation');
+  const rawDestination = form.watch('destination');
+
+  const canSuggestPrice = 
+    String(rawGoods || "").trim() !== '' &&
+    !isNaN(parseFloat(String(rawWeightKg))) && parseFloat(String(rawWeightKg)) > 0 &&
+    String(rawDepartureLocation || "").trim() !== '' &&
+    String(rawDestination || "").trim() !== '';
 
 
   return (
@@ -245,7 +267,7 @@ export function DeliveryForm() {
                 <FormItem>
                 <FormLabel>Weight (kg)</FormLabel>
                 <FormControl>
-                    <Input type="number" placeholder="e.g. 1000" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                    <Input type="number" placeholder="e.g. 1000" {...field} onChange={e => field.onChange(e.target.value)} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -258,7 +280,7 @@ export function DeliveryForm() {
                 <FormItem>
                 <FormLabel>Price per kg (Ariary)</FormLabel>
                 <FormControl>
-                    <Input type="number" placeholder="e.g. 500" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                    <Input type="number" placeholder="e.g. 500" {...field} onChange={e => field.onChange(e.target.value)} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -307,7 +329,7 @@ export function DeliveryForm() {
             <FormItem>
               <FormLabel>Total (Ariary)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g. 500000" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                <Input type="number" placeholder="e.g. 500000" {...field} onChange={e => field.onChange(e.target.value)} readOnly />
               </FormControl>
               <FormDescription>
                 Total revenue for this delivery. Auto-calculated if Weight and Price/kg are filled.
@@ -325,3 +347,6 @@ export function DeliveryForm() {
     </Form>
   );
 }
+
+
+  
