@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { format, parse, isValid } from 'date-fns';
-import useLocalStorage from '@/hooks/useLocalStorage';
+// import useLocalStorage from '@/hooks/useLocalStorage'; // Removed
 import type { Delivery } from '@/types/delivery';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, TrendingUp, WeightIcon, DollarSign, FilterX, ListOrdered, Search, Trash2 } from "lucide-react";
+import { CalendarIcon, TrendingUp, WeightIcon, DollarSign, FilterX, ListOrdered, Search, Trash2, Loader2 } from "lucide-react";
 import { SummaryCard } from './SummaryCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +28,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ITEMS_PER_PAGE = 10;
 
 export function DeliveryDashboard() {
-  const [allDeliveries, setAllDeliveries] = useLocalStorage<Delivery[]>("logiTrackDeliveries", []);
+  // const [allDeliveries, setAllDeliveries] = useLocalStorage<Delivery[]>("logiTrackDeliveries", []); // Removed
+  const [allDeliveries, setAllDeliveries] = useState<Delivery[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -40,13 +45,36 @@ export function DeliveryDashboard() {
   const [sortColumn, setSortColumn] = useState<keyof Delivery | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const [formattedTotalRevenue, setFormattedTotalRevenue] = useState<string>("Loading...");
-  const [formattedTotalWeight, setFormattedTotalWeight] = useState<string>("Loading...");
-  const [formattedAvgPricePerKg, setFormattedAvgPricePerKg] = useState<string>("Loading...");
+  const [formattedTotalRevenue, setFormattedTotalRevenue] = useState<string>("Calculating...");
+  const [formattedTotalWeight, setFormattedTotalWeight] = useState<string>("Calculating...");
+  const [formattedAvgPricePerKg, setFormattedAvgPricePerKg] = useState<string>("Calculating...");
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deliveryToDelete, setDeliveryToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const fetchDeliveries = async () => {
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const response = await fetch('/api/deliveries');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch deliveries: ${response.statusText}` }));
+        throw new Error(errorData.message);
+      }
+      const data: Delivery[] = await response.json();
+      setAllDeliveries(data);
+    } catch (err: any) {
+      setFetchError(err.message);
+      toast({ title: "Error", description: `Could not load deliveries: ${err.message}`, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDeliveries();
+  }, []);
 
   const handleSort = (column: keyof Delivery) => {
     if (sortColumn === column) {
@@ -58,7 +86,7 @@ export function DeliveryDashboard() {
   };
   
   const filteredAndSortedDeliveries = useMemo(() => {
-    let deliveries = [...allDeliveries].reverse(); 
+    let deliveries = [...allDeliveries].reverse(); // Show newest first by default before sorting
 
     if (startDate || endDate) {
         deliveries = deliveries.filter(delivery => {
@@ -128,10 +156,20 @@ export function DeliveryDashboard() {
   );
 
   useEffect(() => {
-    setFormattedTotalRevenue(totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'MGA', minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace('MGA', 'Ar').trim());
-    setFormattedTotalWeight(`${totalWeight.toLocaleString('de-DE')} kg`);
-    setFormattedAvgPricePerKg(averagePricePerKg.toLocaleString('de-DE', { style: 'currency', currency: 'MGA', minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('MGA', 'Ar').trim());
-  }, [totalRevenue, totalWeight, averagePricePerKg]);
+    if (!isLoading && !fetchError) {
+        setFormattedTotalRevenue(totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'MGA', minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace('MGA', 'Ar').trim());
+        setFormattedTotalWeight(`${totalWeight.toLocaleString('de-DE')} kg`);
+        setFormattedAvgPricePerKg(averagePricePerKg.toLocaleString('de-DE', { style: 'currency', currency: 'MGA', minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('MGA', 'Ar').trim());
+    } else if (isLoading) {
+        setFormattedTotalRevenue("Loading...");
+        setFormattedTotalWeight("Loading...");
+        setFormattedAvgPricePerKg("Loading...");
+    } else { // Error case
+        setFormattedTotalRevenue("Error");
+        setFormattedTotalWeight("Error");
+        setFormattedAvgPricePerKg("Error");
+    }
+  }, [totalRevenue, totalWeight, averagePricePerKg, isLoading, fetchError]);
 
 
   const totalPages = Math.ceil(filteredAndSortedDeliveries.length / ITEMS_PER_PAGE);
@@ -166,18 +204,64 @@ export function DeliveryDashboard() {
     setShowDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deliveryToDelete) {
-      setAllDeliveries(prevDeliveries => prevDeliveries.filter(d => d.id !== deliveryToDelete));
-      toast({
-        title: "Delivery Deleted",
-        description: "The delivery record has been successfully deleted.",
-        variant: "default",
-      });
+      try {
+        const response = await fetch(`/api/deliveries/${deliveryToDelete}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({message: 'Failed to delete delivery'}));
+          throw new Error(errorData.message);
+        }
+        toast({
+          title: "Delivery Deleted",
+          description: "The delivery record has been successfully deleted.",
+          variant: "default",
+        });
+        fetchDeliveries(); // Re-fetch deliveries to update the list
+      } catch (err: any) {
+        toast({ title: "Error", description: `Could not delete delivery: ${err.message}`, variant: "destructive" });
+      }
     }
     setShowDeleteDialog(false);
     setDeliveryToDelete(null);
   };
+
+  if (isLoading && allDeliveries.length === 0) { // Show skeleton or loading message only on initial load
+    return (
+        <div className="space-y-8">
+         <Card className="shadow-xl">
+            <CardHeader>
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+            </CardHeader>
+        </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1,2,3].map(i => <Card key={i} className="shadow-lg"><CardHeader><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-1/2 mt-1" /></CardContent></Card>)}
+        </div>
+        <Card className="shadow-lg">
+            <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+            <CardContent className="space-y-4 md:space-y-0 md:flex md:items-end md:space-x-4">
+                 <Skeleton className="h-10 w-full md:w-1/3" />
+                 <Skeleton className="h-10 w-full md:w-1/3" />
+                 <Skeleton className="h-10 w-full md:w-1/3" />
+            </CardContent>
+        </Card>
+         <Card className="shadow-lg">
+            <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+         </Card>
+        </div>
+    );
+  }
+
+  if (fetchError && allDeliveries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-destructive text-xl">Error loading deliveries: {fetchError}</p>
+        <Button onClick={fetchDeliveries} className="mt-4">Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -245,6 +329,7 @@ export function DeliveryDashboard() {
                 <CardTitle className="text-xl">Delivery Logs</CardTitle>
                 <CardDescription>
                     Showing {paginatedDeliveries.length} of {filteredAndSortedDeliveries.length} deliveries.
+                    {isLoading && <Loader2 className="inline-block ml-2 h-4 w-4 animate-spin" />}
                 </CardDescription>
             </div>
              <Button asChild variant="default" size="sm">
@@ -297,7 +382,7 @@ export function DeliveryDashboard() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
-                      No deliveries found matching your criteria.
+                      {isLoading ? "Loading deliveries..." : fetchError ? `Error: ${fetchError}` : "No deliveries found matching your criteria."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -350,3 +435,4 @@ export function DeliveryDashboard() {
     </div>
   );
 }
+
