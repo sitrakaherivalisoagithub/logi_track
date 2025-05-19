@@ -20,5 +20,27 @@
     "pricePerKg": 150,
     "totalAriary": 1500000,
     "id": "fc55b246-b501-4a4a-972c-2bf43d1bad82"
+  },
+  {
+    "date": "2025-05-15",
+    "client": "Betrena",
+    "departureLocation": "Moramanga",
+    "destination": "Toamasina",
+    "goods": "PPM",
+    "weightKg": 10000,
+    "pricePerKg": 297,
+    "totalAriary": 2970000,
+    "id": "a2d7f281-2f05-49a6-b249-1ff71a3d37d4"
+  },
+  {
+    "date": "2025-05-15",
+    "client": "Ratrema",
+    "departureLocation": "Moramanga",
+    "destination": "Tana",
+    "goods": "Cement bags",
+    "weightKg": 7990,
+    "pricePerKg": 350,
+    "totalAriary": 2796500,
+    "id": "de7ad770-b1a5-416a-84e7-747deb2cc856"
   }
 ]

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -303,7 +302,13 @@ export function DeliveryDashboard() {
                     </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus disabled={(date) => startDate && date < startDate} />
+                    <Calendar 
+                      mode="single" 
+                      selected={endDate} 
+                      onSelect={setEndDate} 
+                      initialFocus 
+                      disabled={(date) => startDate ? date < startDate : false} 
+                    />
                     </PopoverContent>
                 </Popover>
             </div>
@@ -380,7 +385,7 @@ export function DeliveryDashboard() {
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow>
+                  <TableRow key="no-deliveries">
                     <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                       {isLoading ? "Loading deliveries..." : fetchError ? `Error: ${fetchError}` : "No deliveries found matching your criteria."}
                     </TableCell>
