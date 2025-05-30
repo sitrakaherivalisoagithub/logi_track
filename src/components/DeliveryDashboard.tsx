@@ -235,10 +235,22 @@ export function DeliveryDashboard() {
             </CardHeader>
         </Card>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1,2,3].map(i => <Card key={i} className="shadow-lg"><CardHeader><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-1/2 mt-1" /></CardContent></Card>)}
+            {[1,2,3].map(i => (
+              <Card key={`skeleton-card-${i}`} className="shadow-lg">
+                <CardHeader>
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-3/4" />
+                  <Skeleton className="h-4 w-1/2 mt-1" />
+                </CardContent>
+              </Card>
+            ))}
         </div>
         <Card className="shadow-lg">
-            <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+            <CardHeader>
+              <Skeleton className="h-6 w-1/4" />
+            </CardHeader>
             <CardContent className="space-y-4 md:space-y-0 md:flex md:items-end md:space-x-4">
                  <Skeleton className="h-10 w-full md:w-1/3" />
                  <Skeleton className="h-10 w-full md:w-1/3" />
@@ -246,8 +258,12 @@ export function DeliveryDashboard() {
             </CardContent>
         </Card>
          <Card className="shadow-lg">
-            <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
-            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+            <CardHeader>
+              <Skeleton className="h-6 w-1/4" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-40 w-full" />
+            </CardContent>
          </Card>
         </div>
     );
@@ -347,7 +363,7 @@ export function DeliveryDashboard() {
           <ScrollArea className="max-h-[600px] w-full">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
-                <TableRow>
+                <TableRow key="header-row">
                   <SortableHeader column="date" label="Date" />
                   <SortableHeader column="client" label="Client" />
                   <SortableHeader column="departureLocation" label="Departure" />
@@ -361,8 +377,8 @@ export function DeliveryDashboard() {
               </TableHeader>
               <TableBody>
                 {paginatedDeliveries.length > 0 ? (
-                  paginatedDeliveries.map((delivery) => (
-                    <TableRow key={delivery.id} className="hover:bg-muted/20 transition-colors">
+                  paginatedDeliveries.map((delivery, index) => (
+                    <TableRow key={`delivery-${delivery.id}-${index}`} className="hover:bg-muted/20 transition-colors">
                       <TableCell>{format(parse(delivery.date, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')}</TableCell>
                       <TableCell>{delivery.client}</TableCell>
                       <TableCell>{delivery.departureLocation}</TableCell>
