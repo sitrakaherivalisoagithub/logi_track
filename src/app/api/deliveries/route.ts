@@ -9,7 +9,12 @@ export async function GET() {
   try {
     const db = await getDb();
     const deliveries = await db.collection('deliveries').find({}).toArray();
-    return NextResponse.json(deliveries);
+    // Transform the deliveries to include the id field
+    const transformedDeliveries = deliveries.map(delivery => ({
+      ...delivery,
+      id: delivery._id.toString()
+    }));
+    return NextResponse.json(transformedDeliveries);
   } catch (error) {
     console.error('Failed to read deliveries:', error);
     return NextResponse.json({ message: 'Failed to read deliveries' }, { status: 500 });

@@ -47,7 +47,14 @@ const deliverySchema = new mongoose.Schema({
     min: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Add virtual id field
+deliverySchema.virtual('id').get(function() {
+  return this._id.toString();
 });
 
 // Create a compound index for efficient querying
