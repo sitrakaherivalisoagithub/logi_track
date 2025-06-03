@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Truck, LayoutDashboard } from 'lucide-react';
+import { Truck, LayoutDashboard, List } from 'lucide-react'; // Added List icon
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,10 @@ export function Navbar() {
           <Link href="/" className={navLinkClasses("/")}>
             <LayoutDashboard className="h-5 w-5" />
             <span className="hidden sm:inline">Dashboard</span>
+          </Link>
+          <Link href="/vehicles" className={navLinkClasses("/vehicles")}>
+            <List className="h-5 w-5" /> 
+            <span className="hidden sm:inline">Vehicles</span>
           </Link>
         </nav>
       </div>
