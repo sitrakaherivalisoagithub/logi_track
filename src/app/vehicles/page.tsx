@@ -1,75 +1,74 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus } from "lucide-react";
-import type { Vehicle } from '@/types/vehicle';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { IVehicle } from '@/models/Vehicle'; // Import the interface
+
+interface VehicleWithId extends IVehicle {
+  _id: string; // Ensure _id is part of the type
+}
 
 export default function VehiclesPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  const fetchVehicles = async () => {
-    try {
-      const response = await fetch('/api/vehicles');
-      if (!response.ok) {
-        throw new Error('Failed to fetch vehicles');
+    const fetchVehicles = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/vehicles');
+        if (!response.ok) {
+          const errorResult = await response.json();
+          throw new Error(errorResult.error || 'Failed to fetch vehicles');
+        }
+        const result = await response.json();
+        if (result.success) {
+          setVehicles(result.data);
+        } else {
+          throw new Error(result.error || 'Failed to fetch vehicles');
+        }
+      } catch (error) {
+        const e = error as Error;
+        console.error('Error fetching vehicles:', e);
+        toast({
+          title: 'Error',
+          description: e.message || 'Could not fetch vehicles. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
       }
-      const data = await response.json();
-      setVehicles(data);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load vehicles",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  if (isLoading) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Vehicles</CardTitle>
-            <CardDescription>Loading vehicles...</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+    fetchVehicles();
+  }, [toast]);
 
   return (
-    <div className="container py-8">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Vehicles</CardTitle>
-            <CardDescription>Manage your fleet of vehicles</CardDescription>
-          </div>
-          <Button asChild>
-            <Link href="/vehicles/new">
-              <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Vehicle Fleet</h1>
+        <Link href="/vehicles/new" passHref>
+          <Button>Register New Vehicle</Button>
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <p>Loading vehicles...</p>
+      ) : vehicles.length === 0 ? (
+        <p>No vehicles registered yet. <Link href="/vehicles/new" className="text-indigo-600 hover:underline">Add one now!</Link></p>
+      ) : (
+        <div className="bg-white p-6 shadow-md rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>
@@ -79,27 +78,17 @@ export default function VehiclesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicles.length > 0 ? (
-                vehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell>{vehicle.brand}</TableCell>
-                    <TableCell>{vehicle.plateNumber}</TableCell>
-                    <TableCell className="text-right">
-                      {vehicle.maxPayloadKg.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No vehicles found. Add your first vehicle to get started.
-                  </TableCell>
+              {vehicles.map((vehicle) => (
+                <TableRow key={vehicle._id}>
+                  <TableCell>{vehicle.brand}</TableCell>
+                  <TableCell>{vehicle.plateNumber}</TableCell>
+                  <TableCell className="text-right">{vehicle.maxPayloadKg.toLocaleString()}</TableCell>
                 </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
-} 
+}

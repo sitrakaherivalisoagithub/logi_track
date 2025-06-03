@@ -1,12 +1,15 @@
 'use server';
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/mongodb';
+// import { getDb } from '@/lib/mongodb'; // No longer needed for this file
+import { connectMongoose } from '@/lib/mongodb'; // Import connectMongoose
 import { Delivery } from '@/models/Delivery';
 import mongoose from 'mongoose';
 
 export async function GET() {
+  await connectMongoose();
   try {
+<<<<<<< HEAD
     const db = await getDb();
     const deliveries = await db.collection('deliveries').find({}).toArray();
     // Transform the deliveries to include the id field
@@ -15,29 +18,34 @@ export async function GET() {
       id: delivery._id.toString()
     }));
     return NextResponse.json(transformedDeliveries);
+=======
+    // Use Mongoose model to find deliveries
+    const deliveries = await Delivery.find({}).sort({ createdAt: -1 }); // Sort by newest first
+    return NextResponse.json(deliveries, { status: 200 });
+>>>>>>> dev
   } catch (error) {
     console.error('Failed to read deliveries:', error);
-    return NextResponse.json({ message: 'Failed to read deliveries' }, { status: 500 });
+    const e = error as Error;
+    return NextResponse.json({ success: false, message: 'Failed to read deliveries', error: e.message }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  await connectMongoose();
   try {
-    const newDeliveryData = await request.json();
+    const newDeliveryData = await request.json(); // This includes the 'vehicle' field as a string ID
     
-    // Validate the data using Mongoose model
-    const delivery = new Delivery(newDeliveryData);
-    await delivery.validate();
-
-    const db = await getDb();
-    const result = await db.collection('deliveries').insertOne(delivery);
+    // Use Mongoose's create method. It handles validation and saving.
+    // Mongoose will automatically attempt to cast the 'vehicle' string to ObjectId based on the schema ref.
+    const createdDelivery = await Delivery.create(newDeliveryData);
     
-    return NextResponse.json({ ...delivery.toObject(), _id: result.insertedId }, { status: 201 });
+    return NextResponse.json(createdDelivery, { status: 201 });
   } catch (error) {
     console.error('Failed to add delivery:', error);
     if (error instanceof mongoose.Error.ValidationError) {
-      return NextResponse.json({ message: 'Invalid delivery data', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Invalid delivery data', errors: error.errors }, { status: 400 });
     }
-    return NextResponse.json({ message: 'Failed to add delivery' }, { status: 500 });
+    // Handle other potential errors, e.g., database connection issues if Mongoose fails to connect
+    return NextResponse.json({ success: false, message: 'Failed to add delivery', error: (error as Error).message }, { status: 500 });
   }
 }
