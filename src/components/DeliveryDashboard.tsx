@@ -207,13 +207,15 @@ export function DeliveryDashboard() {
     if (deliveryToDelete) {
       try {
         const response = await fetch(`/api/deliveries/${deliveryToDelete}`, { method: 'DELETE' });
+        const responseBody = await response.json();
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({message: 'Failed to delete delivery'}));
-          throw new Error(errorData.message);
+          const errorMessage = responseBody?.message || 'Failed to delete delivery';
+          throw new Error(errorMessage);
         }
         toast({
           title: "Delivery Deleted",
-          description: "The delivery record has been successfully deleted.",
+          description: responseBody?.message || "The delivery record has been successfully deleted.",
           variant: "default",
         });
         fetchDeliveries(); // Re-fetch deliveries to update the list
@@ -456,4 +458,3 @@ export function DeliveryDashboard() {
     </div>
   );
 }
-

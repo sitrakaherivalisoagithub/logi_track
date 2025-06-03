@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Vehicle from '@/models/Vehicle';
+import Vehicle from '@/models/vehicle';
 import mongoose from 'mongoose'; // Import mongoose for error handling
 import { connectMongoose } from '@/lib/mongodb'; // Import connectMongoose
 

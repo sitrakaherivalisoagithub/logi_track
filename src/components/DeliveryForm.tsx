@@ -29,7 +29,7 @@ import { CalendarIcon, Sparkles, Loader2, Info } from "lucide-react";
 // import type { Delivery, AISuggestion } from "@/types/delivery"; // Using IDelivery from model
 import type { AISuggestion } from "@/types/delivery";
 import { IDelivery, IDeliveryData } from "@/models/Delivery"; // Use IDelivery and IDeliveryData from model
-import { IVehicle } from "@/models/Vehicle"; // Import IVehicle
+import { IVehicle } from "@/models/vehicle"; // Import IVehicle
 // import useLocalStorage from "@/hooks/useLocalStorage"; // Removed
 import { useToast } from "@/hooks/use-toast";
 import { suggestPricePerKg, type SuggestPricePerKgInput } from "@/ai/flows/suggest-price-per-kg";

@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { IVehicle } from '@/models/Vehicle'; // Import the interface
+import { IVehicle } from '@/models/vehicle'; // Import the interface
 
 interface VehicleWithId extends IVehicle {
   _id: string; // Ensure _id is part of the type

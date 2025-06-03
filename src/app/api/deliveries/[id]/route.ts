@@ -1,12 +1,16 @@
-'use server';
-
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+interface DeliveryRouteContext {
+  params: {
+    id: string;
+  };
+}
+
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: DeliveryRouteContext
 ): Promise<NextResponse> {
   try {
     const deliveryId = context.params.id;
@@ -30,7 +34,7 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: DeliveryRouteContext
 ): Promise<NextResponse> {
   try {
     const deliveryId = context.params.id;

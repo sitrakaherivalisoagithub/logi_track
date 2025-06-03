@@ -68,6 +68,7 @@ export async function connectMongoose() {
       );
     }
     cached.promise = mongoose.connect(uri, {
+      dbName: dbName, // Explicitly use the dbName from .env
       // bufferCommands: false, // Consider this if issues persist
     }).then((mongooseInstance) => {
       console.log("Mongoose connected.");

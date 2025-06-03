@@ -78,6 +78,8 @@ const deliverySchemaFields = {
 
 const deliverySchema = new mongoose.Schema(deliverySchemaFields, {
   timestamps: true, // Adds createdAt and updatedAt timestamps
+  toJSON: { virtuals: true }, // Ensure virtuals like 'id' are included in JSON output
+  toObject: { virtuals: true } // Ensure virtuals are included when converting to a plain object
 });
 
 // Create a compound index for efficient querying
