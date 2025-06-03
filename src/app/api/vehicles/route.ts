@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getDb } from '@/lib/mongodb';
 import { Vehicle } from '@/models/vehicle';
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const vehicles = await Vehicle.find({}).sort({ createdAt: -1 });
+    const db = await getDb();
+    const vehicles = await db.collection('vehicles').find({}).sort({ createdAt: -1 }).toArray();
     return NextResponse.json(vehicles);
   } catch (error: any) {
     return NextResponse.json(
@@ -17,10 +17,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
+    const db = await getDb();
     const body = await request.json();
     
-    const vehicle = await Vehicle.create(body);
+    const result = await db.collection('vehicles').insertOne(body);
+    const vehicle = await db.collection('vehicles').findOne({ _id: result.insertedId });
     return NextResponse.json(vehicle, { status: 201 });
   } catch (error: any) {
     if (error.code === 11000) {

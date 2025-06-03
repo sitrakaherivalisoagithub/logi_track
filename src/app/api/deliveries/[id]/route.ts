@@ -6,10 +6,10 @@ import { ObjectId } from 'mongodb';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  context: { params: { id: string } }
+): Promise<NextResponse> {
   try {
-    const deliveryId = params.id;
+    const deliveryId = context.params.id;
     if (!deliveryId) {
       return NextResponse.json({ message: 'Delivery ID is required' }, { status: 400 });
     }
@@ -30,10 +30,10 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  context: { params: { id: string } }
+): Promise<NextResponse> {
   try {
-    const deliveryId = params.id;
+    const deliveryId = context.params.id;
     if (!deliveryId) {
       return NextResponse.json({ message: 'Delivery ID is required' }, { status: 400 });
     }
