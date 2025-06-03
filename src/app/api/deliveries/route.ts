@@ -9,20 +9,9 @@ import mongoose from 'mongoose';
 export async function GET() {
   await connectMongoose();
   try {
-<<<<<<< HEAD
-    const db = await getDb();
-    const deliveries = await db.collection('deliveries').find({}).toArray();
-    // Transform the deliveries to include the id field
-    const transformedDeliveries = deliveries.map(delivery => ({
-      ...delivery,
-      id: delivery._id.toString()
-    }));
-    return NextResponse.json(transformedDeliveries);
-=======
     // Use Mongoose model to find deliveries
     const deliveries = await Delivery.find({}).sort({ createdAt: -1 }); // Sort by newest first
     return NextResponse.json(deliveries, { status: 200 });
->>>>>>> dev
   } catch (error) {
     console.error('Failed to read deliveries:', error);
     const e = error as Error;
